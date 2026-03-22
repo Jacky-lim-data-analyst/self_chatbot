@@ -26,9 +26,10 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         extra = "ignore"
 
+
 settings = Settings()
 # if __name__ == "__main__":
 #     settings = Settings()
 #     print(f"API key: {settings.deepseek_api_key.get_secret_value()}")
 #     print(f"ollama host: {settings.ollama_host}")
-    # print(f"Ollama model: {settings.ollama_default_model}")
+# print(f"Ollama model: {settings.ollama_default_model}")

@@ -79,9 +79,7 @@ class BaseLLM(ABC):
 
         if self.config.system_prompt:
             if not messages or messages[0].role != "system":
-                result.append(
-                    {"role": "system", "content": self.config.system_prompt}
-                )
+                result.append({"role": "system", "content": self.config.system_prompt})
 
         result.extend({"role": m.role, "content": m.content} for m in messages)
 

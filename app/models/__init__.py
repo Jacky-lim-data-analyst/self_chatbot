@@ -25,6 +25,6 @@ class LLMConfig:
     """Common configurations shared across all LLM providers"""
 
     model: str
-    temperature: float = 0.7
+    temperature: float = 1.0
     system_prompt: Optional[str] = None
     extra: dict = field(default_factory=dict)  # provider-specific overrides
