@@ -15,7 +15,7 @@ class OllamaLLM(BaseLLM):
         super().__init__(config)
         # self.config was defined
         # define the client
-        print(settings.ollama_host)
+        # print(settings.ollama_host)
         self._client: AsyncClient = AsyncClient(host=settings.ollama_host)
 
     async def stream_chat(self, messages: list[Message]) -> AsyncIterator[str]:

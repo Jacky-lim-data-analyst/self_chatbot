@@ -1,4 +1,4 @@
-""" 
+"""
 FastAPI application entry point
 ============================================
 Creates and configures the FastAPI app, mounts all routers, and
@@ -7,7 +7,7 @@ exposes the ASGI callable used by uvicorn / gunicorn.
 Run (development)
 -----------------
     uvicorn app.main:app --reload --port 8000
- 
+
 Run (production)
 ----------------
     gunicorn app.main:app -k uvicorn.workers.UvicornWorker --workers 4
@@ -22,6 +22,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.router.health import router as health_router
 from app.router.chat import router as chat_router
+from app.router.conversation import router as conv_router
+
+from app.util.logging import configure_logging, RequestLoggingMiddleware
+
+configure_logging()
 
 # ---------------------------------------------------------------------------
 # Lifespan
@@ -29,13 +34,17 @@ from app.router.chat import router as chat_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.service.llm.factory import available_providers
+    from app.service.database import init_db
+
     print("LLM Gateway starting up")
     print(f"Registered providers: {available_providers()}")
     # needs to initialize database
+    init_db()
 
-    yield   # app run here
+    yield  # app run here
 
     print("LLM gateway shutting down")
+
 
 # ---------------------------------------------------------------------------
 # App factory
@@ -50,12 +59,13 @@ def create_app() -> FastAPI:
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     # ----------------------------------------------------------------
     # Middleware
     # ----------------------------------------------------------------
+    app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -68,7 +78,9 @@ def create_app() -> FastAPI:
     # ----------------------------------------------------------------
     app.include_router(health_router)
     app.include_router(chat_router)
+    app.include_router(conv_router)
 
     return app
+
 
 app = create_app()

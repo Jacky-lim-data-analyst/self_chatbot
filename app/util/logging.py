@@ -13,7 +13,7 @@ Usage:
     from logger import configure_logging, request_logging_middleware
     configure_logging()
     app.middleware("http")(request_logging_middleware)
- 
+
     # any other module
     from logger import get_logger
     log = get_logger("db")
@@ -26,7 +26,7 @@ import time
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -39,15 +39,16 @@ LOG_LEVEL_FILE = logging.INFO
 
 # ── ANSI colour map ────────────────────────────────────────────────────────────
 
-_RESET  = "\033[0m"
-_BOLD   = "\033[1m"
+_RESET = "\033[0m"
+_BOLD = "\033[1m"
 _COLOURS = {
-    logging.DEBUG:    "\033[36m",   # cyan
-    logging.INFO:     "\033[32m",   # green
-    logging.WARNING:  "\033[33m",   # yellow
-    logging.ERROR:    "\033[31m",   # red
-    logging.CRITICAL: "\033[35m",   # magenta
+    logging.DEBUG: "\033[36m",  # cyan
+    logging.INFO: "\033[32m",  # green
+    logging.WARNING: "\033[33m",  # yellow
+    logging.ERROR: "\033[31m",  # red
+    logging.CRITICAL: "\033[35m",  # magenta
 }
+
 
 class _ColoredFormatter(logging.Formatter):
     """Formatter that prepends a coloured level badge to every console line."""
@@ -63,17 +64,19 @@ class _ColoredFormatter(logging.Formatter):
             reset=_RESET,
             dim="\033[2m]",
             name=record.name,
-            msg=""
+            msg="",
         )
         # Let the parent build the full message (exc_info etc.) then prepend badge
         original = super().format(record)
         return badge + original
-    
+
+
 # Plain format for log files (no ANSI codes)
 _FILE_FMT = "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s"
 _DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
 # ── Setup ──────────────────────────────────────────────────────────────────────
+
 
 def configure_logging() -> None:
     """
@@ -83,17 +86,14 @@ def configure_logging() -> None:
     root = logging.getLogger(APP_LOGGER_NAME)
     if root.handlers:
         return
-    
-    root.setLevel(logging.DEBUG)   # handlers filter individually
+
+    root.setLevel(logging.DEBUG)  # handlers filter individually
 
     # ── Console handler ──────────────────────────────────────────────────────
     console = logging.StreamHandler(sys.stdout)
     console.setLevel(LOG_LEVEL_CONSOLE)
     console.setFormatter(
-        _ColoredFormatter(
-            fmt="%(asctime)s %(message)s",
-            datefmt="%H:%M:%S"
-        )
+        _ColoredFormatter(fmt="%(asctime)s %(message)s", datefmt="%H:%M:%S")
     )
     root.addHandler(console)
 
@@ -101,9 +101,9 @@ def configure_logging() -> None:
     LOG_DIR.mkdir(exist_ok=True)
     file_handler = TimedRotatingFileHandler(
         filename=LOG_FILE,
-        when="midnight",    # rotate at midnight
+        when="midnight",  # rotate at midnight
         backupCount=7,
-        encoding="utf-8"
+        encoding="utf-8",
     )
     file_handler.setLevel(LOG_LEVEL_FILE)
     file_handler.setFormatter(logging.Formatter(_FILE_FMT, datefmt=_DATE_FMT))
@@ -113,37 +113,44 @@ def configure_logging() -> None:
     for noisy in ("uvicorn.access", "httpx", "httpcore"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
-    root.info("Logging configured (console=%s, file=%s)",
-              logging.getLevelName(LOG_LEVEL_CONSOLE), LOG_FILE)
-    
+    root.info(
+        "Logging configured (console=%s, file=%s)",
+        logging.getLevelName(LOG_LEVEL_CONSOLE),
+        LOG_FILE,
+    )
+
+
 # ── Public helper ──────────────────────────────────────────────────────────────
 def get_logger(name: str) -> logging.Logger:
     """
     Return a child logger namespaced under the app root.
- 
+
     Args:
         name: Short label for the subsystem, e.g. "db", "api", "health".
- 
+
     Example:
         log = get_logger("db")
         log.debug("Opened connection to %s", DB_PATH)
     """
     return logging.getLogger(f"{APP_LOGGER_NAME}.{name}")
 
+
 # ── FastAPI request / response middleware ──────────────────────────────────────
+
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
     Logs every HTTP request and its outcome.
- 
+
     Attaches to FastAPI via:
         app.add_middleware(RequestLoggingMiddleware)
- 
+
     Sample output:
         → GET  /health/          (no body)
         ← 200  GET  /health/     12.3 ms
         ← 422  POST /messages/   8.1 ms   [Unprocessable Entity]
     """
+
     _log = get_logger("http")
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -170,13 +177,14 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             elapsed_ms,
         )
         return response
-    
+
+
 # ── Convenience: log unhandled exceptions ─────────────────────────────────────
 def log_exception(exc: Exception, context: str = "") -> None:
     """
     Log an unexpected exception with full traceback.
     Use inside except blocks where you want a record but still re-raise.
- 
+
     Example:
         try:
             risky_operation()
@@ -185,6 +193,6 @@ def log_exception(exc: Exception, context: str = "") -> None:
             raise
     """
     _exc_log = get_logger("exception")
-    _exc_log.exception("Unhandled exception%s: %s",
-                       f" in {context}" if context else "", exc)
-    
+    _exc_log.exception(
+        "Unhandled exception%s: %s", f" in {context}" if context else "", exc
+    )

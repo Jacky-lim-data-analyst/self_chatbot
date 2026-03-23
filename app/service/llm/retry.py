@@ -23,9 +23,11 @@ from typing import AsyncIterator, Callable
 
 from app.models import Message
 from .base import BaseLLM
+from app.util.logging import get_logger
 
 MAX_DELAYS = 60.0  # second
 
+logger = get_logger("retry")
 
 # ---------------------------------------------------------------------------
 # Retry-After header parsing
@@ -71,7 +73,7 @@ def _parse_retry_after(exc: BaseException) -> float | None:
     except Exception:
         pass
 
-    print(f"Could not parse Retry-After header value: {raw}")
+    logger.info(f"Could not parse Retry-After header value: {raw}")
     return None
 
 
@@ -183,12 +185,12 @@ async def _retry_stream(
             last_exc = exc
 
             if not _is_retryable(exc):
-                print(f"Non-retryable error on attempt {attempt + 1}: {exc!r}")
+                logger.warning(f"Non-retryable error on attempt {attempt + 1}: {exc!r}")
                 raise
 
             is_last = attempt == max_attempts - 1
             if is_last:
-                print(f"stream_chat failed after {max_attempts}: {exc!r}")
+                logger.error(f"stream_chat failed after {max_attempts}: {exc!r}")
                 raise
 
             wait = _parse_retry_after(exc) or _backoff(
@@ -199,7 +201,7 @@ async def _retry_stream(
                 jitter=jitter,
             )
 
-            print(
+            logger.warning(
                 f"stream_chat attempt {attempt + 1}/{max_attempts} failed."
                 f"{type(exc).__name__}: retrying in {wait:.2f}s"
             )

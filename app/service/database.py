@@ -10,6 +10,10 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Generator  # yield
 
+from app.util.logging import get_logger
+
+logger = get_logger("database")
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 DB_PATH = "chatbot.db"
 
@@ -79,7 +83,7 @@ def init_db(db_path: str = DB_PATH) -> None:
     try:
         conn.executescript(DDL)
         conn.commit()
-        print(f"Database initialized at '{db_path}'")
+        logger.info(f"Database initialized at '{db_path}'")
     finally:
         conn.close()
 
