@@ -28,6 +28,7 @@ from app.util.logging import configure_logging, RequestLoggingMiddleware
 
 configure_logging()
 
+
 # ---------------------------------------------------------------------------
 # Lifespan
 # ---------------------------------------------------------------------------
